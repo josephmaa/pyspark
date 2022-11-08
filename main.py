@@ -4,6 +4,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import os
+import pandas as pd
 
 DATASET_PATH = "US_Accidents_Dec21_updated.csv"
 OUTPUT_PATH = "outputs"
@@ -64,27 +65,38 @@ def generate_histogram(accidents_df):
     fig.savefig(os.path.join("outputs", "histogram.png"))
     plt.show()
 
+
 def generate_correlation_coefficients(accidents_df):
-    x_cols = [col for col in df.columns if col not in ['Severity'] if df[col].dtype=='float64']
+    x_cols = [
+        col
+        for col, type in accidents_df.dtypes
+        if col not in ["Severity"] and type in ("int", "double")
+    ]
 
     labels = []
     values = []
+    severity = list(accidents_df.select("Severity").toPandas()["Severity"])
     for col in x_cols:
         labels.append(col)
-        values.append(np.corrcoef(df[col].values, df.Severity.values)[0,1])
-    corr_df = pd.DataFrame({'col_labels':labels, 'corr_values':values})
-    corr_df = corr_df.sort_values(by='corr_values')
+        values.append(
+            np.corrcoef(
+                list(accidents_df.select(col).toPandas()[col]),
+                severity,
+            )[0, 1],
+        )
+    corr_df = pd.DataFrame({"col_labels": labels, "corr_values": values})
+    corr_df = corr_df.sort_values(by="corr_values")
 
     ind = np.arange(len(labels))
     width = 0.9
-    fig, ax = plt.subplots(figsize=(12,40))
-    rects = ax.barh(ind, np.array(corr_df.corr_values.values), color='y')
+    fig, ax = plt.subplots(figsize=(12, 40))
+    rects = ax.barh(ind, np.array(corr_df.corr_values.values), color="y")
     ax.set_yticks(ind)
-    ax.set_yticklabels(corr_df.col_labels.values, rotation='horizontal')
+    ax.set_yticklabels(corr_df.col_labels.values, rotation="horizontal")
     ax.set_xlabel("Correlation coefficient")
     ax.set_title("Correlation coefficient of the variables")
-    plt.show()
     fig.savefig(os.path.join("outputs", "correlation_coefficients.png"))
+    plt.show()
 
 
 def main():
@@ -97,6 +109,7 @@ def main():
     # generate_histogram(accidents_df)
     # generate_missing_values(accidents_df)
     generate_jointplot(accidents_df)
+    # generate_correlation_coefficients(accidents_df)
 
 
 if __name__ == "__main__":
