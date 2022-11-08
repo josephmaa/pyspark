@@ -2,6 +2,7 @@ import pyspark
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+import os
 
 DATASET_PATH = "US_Accidents_Dec21_updated.csv"
 OUTPUT_PATH = "outputs"
@@ -26,7 +27,9 @@ def main():
     fig, ax = plt.subplots(figsize=(40, 32))
     sns.barplot(x=[row[0] for row in states], y=counts)
     plt.show()
+    plt.savefig(os.path.join("outputs", "histogram.png"))
 
+    
 
 if __name__ == "__main__":
     main()
