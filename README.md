@@ -6,15 +6,15 @@ Spark MLlib is necessary in order to run the linear regression model. Currently 
 
 By default, PySpark is run in Standalone mode for prototyping, but can be deployed to a S3 bucket. 
 
-![](outputs\jointplot.png)
+![](outputs/jointplot.png)
 
 Jointplot of latitude and longitude of accidents from 2019-2021.
 
-![](outputs\histogram.png)
+![](outputs/histogram.png)
 
 Histogram of accident distribution per state.
 
-![](outputs\missing.png)
+![](outputs/missing.png)
 Missing values in the dataset by column.
 
 Installation:
