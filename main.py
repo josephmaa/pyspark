@@ -1,10 +1,13 @@
 import pyspark
 from pyspark.sql.functions import col, when, count
+from pyspark.ml.regression import LinearRegression
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import os
 import pandas as pd
+import argparse
+import sys
 
 DATASET_PATH = "US_Accidents_Dec21_updated.csv"
 OUTPUT_PATH = "outputs"
@@ -52,16 +55,11 @@ def generate_missing_values(accidents_df):
 
 def generate_histogram(accidents_df):
     # Plot the count of accidents by state.
-    states = accidents_df.select("State").distinct().collect()
-    counts = []
-
-    for row in states:
-        counts.append(
-            accidents_df.filter(accidents_df.State == row[0]).select("ID").count()
-        )
+    counts = accidents_df.groupBy("State").count().toPandas()
 
     fig, ax = plt.subplots(figsize=(40, 32))
-    sns.barplot(x=[row[0] for row in states], y=counts)
+    fig.suptitle("Counts of accidents per state")
+    sns.barplot(x=counts["State"].to_numpy(), y=counts["count"].to_numpy())
     fig.savefig(os.path.join("outputs", "histogram.png"))
     plt.show()
 
@@ -100,16 +98,67 @@ def generate_correlation_coefficients(accidents_df):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--histogram", action="store_true")
+    parser.add_argument("--missing_values", action="store_true")
+    parser.add_argument("--jointplot", action="store_true")
+    parser.add_argument("--correlation_coefficients", action="store_true")
+    parser.add_argument("--train", action="store_true")
+    args = parser.parse_args(sys.argv[1:])
+
     spark = pyspark.sql.SparkSession.builder.getOrCreate()
     accidents_df = spark.read.csv(DATASET_PATH, inferSchema=True, header=True)
 
     # Show the dataframe schema.
     accidents_df.printSchema()
 
-    # generate_histogram(accidents_df)
-    # generate_missing_values(accidents_df)
-    generate_jointplot(accidents_df)
-    # generate_correlation_coefficients(accidents_df)
+    if args.histogram:
+        generate_histogram(accidents_df)
+    elif args.missing_values:
+        generate_missing_values(accidents_df)
+    elif args.jointplot:
+        generate_jointplot(accidents_df)
+    elif args.correlation_coefficients:
+        generate_correlation_coefficients(accidents_df)
+    elif args.train:
+        from pyspark.sql.types import IntegerType
+
+        accidents_df = accidents_df.withColumn(
+            "ID", accidents_df["ID"].cast(IntegerType())
+        )
+        accidents_df = accidents_df.na.fill(0)
+
+        train_data, test_data = accidents_df.randomSplit([0.8, 0.2], seed=1)
+
+        from pyspark.ml.feature import VectorAssembler
+
+        assembler = VectorAssembler(
+            inputCols=["Start_Lat", "Start_Lng", "End_Lat", "End_Lng"],
+            outputCol="features",
+        )
+        accidents_df = assembler.transform(accidents_df)
+
+        lr = LinearRegression(
+            featuresCol="features",
+            labelCol="Severity",
+            predictionCol="predictions",
+            maxIter=1,
+        )
+
+        # Fit the data to the model
+        linearModel = lr.fit(accidents_df)
+
+        train_data.show()
+        test_data.show()
+
+        print(f"The number of partitions are: {accidents_df.rdd.getNumPartitions()}")
+        print(f"The number of features are: {linearModel.numFeatures}")
+        print(f"The model coefficients are: {linearModel.coefficients}")
+        print(f"The model intercepts are: {linearModel.intercept}")
+
+        print("RMSE: {0}".format(linearModel.summary.rootMeanSquaredError))
+        print("MAE: {0}".format(linearModel.summary.meanAbsoluteError))
+        print("R2: {0}".format(linearModel.summary.r2))
 
 
 if __name__ == "__main__":
