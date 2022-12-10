@@ -1,10 +1,10 @@
 Pyspark Traffic Detection
 
-First install the dataset from [kaggle](https://www.kaggle.com/datasets/sobhanmoosavi/us-accidents?resource=download). Put the dataset in the main repository and call `python main.py`. Generates figures to the output folder for analysis. The dataset is approximately 11 GB. 
+First install the dataset from [kaggle](https://www.kaggle.com/datasets/sobhanmoosavi/us-accidents?resource=download). Put the dataset in the main repository and call `python main.py`. Generates figures to the output folder for analysis. The dataset is approximately 1 GB.
 
 Spark MLlib is necessary in order to run the linear regression model. Currently on RMSE, MAE, R2 (Pearson's) are the only metrics computed on the model.
 
-By default, PySpark is run in Standalone mode for prototyping, but can be deployed to a S3 bucket. 
+By default, PySpark is run in Standalone mode for prototyping, but can be deployed to a Google Cloud Storage Bucket.
 
 ![](outputs/jointplot.png)
 
@@ -21,7 +21,7 @@ Installation:
 
 1. `conda create -n "pyspark" python=3.10`
 2. `conda install pip`
-2. `pip install -r requirements.txt`
+3. `pip install -r requirements.txt`
 
 Usage:
 
